@@ -1,0 +1,47 @@
+<a href="model.html" target="_blank">ddddd</a>
+
+
+<script>
+    var worker = new Worker('export.js');
+    var db, dbname = "model"
+    var a = new Date().getTime() / 1000
+    createDb()
+    worker.onmessage = function(event) {
+        var store = db.transaction(dbname, 'readwrite').objectStore(dbname)
+        var data = {
+            "id": 1,
+            "content": JSON.parse(event.data)
+        }
+        store.put(data)
+            // worker.terminate()
+        console.log('model store success');
+        console.log((new Date().getTime() / 1000) - a + " s")
+    }
+
+    function createDb() {
+        var indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIndexedDB;
+        var request = indexedDB.open(dbname, "1");
+        request.onerror = function(e) {
+            console.log(e.currentTarget.error.message);
+        };
+
+        request.onsuccess = function(e) {
+            db = e.target.result;
+            var store = db.transaction(dbname, 'readwrite').objectStore(dbname)
+            var req = store.get(1)
+            req.onsuccess = function(event) {
+                if (req.result == null) {
+                    worker.postMessage("1")
+                } else {
+                    console.log('not need webwork');
+                };
+            }
+        }
+        request.onupgradeneeded = function(e) {
+            db = e.target.result;
+            var objectStore = db.createObjectStore(dbname, {
+                keyPath: "id"
+            });
+        }
+    }
+</script>
